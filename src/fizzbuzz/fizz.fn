@@ -1,0 +1,52 @@
+{-
+//// fun benchmark apps
+//// FizzBuzz
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+
+putc x =  x (out (extern 0x1000beef));
+
+printlist xs z = xs (prints [ 13,10 ] True) (\h t -> prints h (prints [ 44,32 ] (printlist t z))); 
+
+prints s z = s z (\h t -> putc h (prints t z));
+
+take n xs = xs (Nil) (\h t -> (== 0 n) Nil (Cons h (take (- n 1) t))  );
+
+foldl f z xs = xs z (\h t -> foldl f (f z h) t);
+
+reverse xs  = foldl (flip Cons) Nil xs;
+
+flip a b c = a c b;
+
+zipWith f xs1 xs2 = xs1 (Nil) (\h t -> xs2 (Nil) (\h2 t2 -> Cons (f h h2) (zipWith f t t2))); 
+
+zipWith3 f xs1 xs2 xs3 = xs1 (Nil) (\h t -> xs2 (Nil) (\h2 t2 -> xs3 (Nil) ( \h3 t3 ->  Cons (f h h2 h3) (zipWith3 f t t2 t3))));
+
+append xs ys = xs ys (\h t -> Cons h (append t ys));
+
+itoa_ n = (> 1 n) Nil (Cons (+ 48 (% n 10))  (itoa_ (/ n 10)));
+
+show n = (> 0 n) (append (Cons 45 Nil) (reverse itoa_ (- 0 n))) (reverse (itoa_ n));
+
+----------------------------------------------------------------------------------
+
+fizz = Cons Nil (Cons Nil (Cons "Fizz" fizz));
+
+buzz = Cons Nil (Cons Nil (Cons Nil (Cons Nil (Cons "Buzz" buzz))));
+
+fizzbuzzes = zipWith append fizz buzz;
+
+from n = Cons n (from (+ 1 n));
+
+pick a b = a (show b) (\h t -> a);  
+
+fizzbuzz n = take n (zipWith pick fizzbuzzes (from 1));
+
+
+main =  printlist (fizzbuzz 250000 ) True;
+
+

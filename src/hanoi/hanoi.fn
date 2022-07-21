@@ -1,0 +1,23 @@
+{-
+//// fun benchmark apps
+//// hanoi
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Pair = Pair a b;
+
+put x = out (extern 0x10a1fafa) x;
+
+printlist xs z = xs (z) (\h t -> printpair h (printlist t z)); 
+
+printpair ps z = ps (\f s -> put f (put s z));
+
+hanoi n a b c ls = (== 0 n) ls ( (hanoi (- n 1) a c b (Cons (Pair a b) (hanoi (- n 1) c b a ls)))); 
+
+main = printlist (hanoi 10 1 2 3 Nil) True;
+
+
