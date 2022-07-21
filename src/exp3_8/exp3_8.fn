@@ -1,4 +1,9 @@
-
+{-
+//// fun benchmark apps
+//// exp3_8
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
 
 data Nat = Succ a | Zero;
 data Bool =  False | True ;
@@ -6,14 +11,10 @@ data Bool =  False | True ;
 adds x y = x y (\a -> Succ (adds a y));
 muls x y  = y (Zero) (\a -> (adds (muls x a) x));
 
-
 toNat x = (< x 1) Zero (Succ (toNat (- x 1)));
 toInt n = n (0) (\a -> (+ 1 (toInt a))); 
 
-
 pows x y = y (Succ Zero) (\a -> muls x (pows x a));
-
---fun powM x y = natC (Succ Zero) (mulM x) y;
 
 n1 = Succ Zero;
 n2 = Succ(n1);
@@ -26,43 +27,9 @@ n8 = Succ(n7);
 n9 = Succ(n8);
 n10 = Succ(n9);
 
---fun fmap_p f = \b -> b (Zero) (. Succ  f); 
-
---fun natC z next = CATA fmap_p (\b -> b z next );
-
---fun incM x = Succ x;
-
---fun addM x y = natC y incM x;
---fun mulM x y = natC Zero (addM y) x;
-
---fun toIntM  = FIX (\n -> \x -> x 0 (. (ADD 1) n));  //natC 0 (ADD 1);  //CATA fmap_p (\x -> x 0 (ADD 1));  
-
---fun favg xs  = FDIV (foldr4 (FADD) $0.0 xs )  ( (length xs)FLOAT);
-
-
-
---fun mac  a b s = ADD  (MUL a b) s;
 put x = out (extern 0x10a1fafa) x;
 
 main = put (toInt (pows n3 n8)) True;
-
--- //mac // OUT 1 (favg ($0.000000001:$0.000000009:$9.34:$100.675443:$55.9844321:$2.99006002:[]) ) true //printflist ($5.0001:$7.2:$9.34:[])  
-
-
---//put (MUL 1 2) true  
-
---//OUT 1 ( FMUL $5.4  $9.32) true  //addOne //put (toInt  (powM n3 n8)) true
-
---//(powM n2 n10)
---put (toInt (powM n3 n7)) true
-
---//put (toInt (add n8 n8)) true
-
---//put  (toInt (Succ(Succ(Succ Zero)))) true 
-
---//print_int (int (toNat 3 ^^^ toNat 8))
-
---//main = OUT 0 ( tak 18 12 6) true 
 
 
 
