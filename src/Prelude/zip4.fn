@@ -1,0 +1,36 @@
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+
+
+--map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+
+--foldmap f g z = compose (foldr f z) (map g);
+
+zipWith3 f xs1 xs2 xs3 = xs1 (Nil) (\h t -> xs2 (Nil) (\h2 t2 -> xs3 (Nil) ( \h3 t3 ->  Cons (f h h2 h3) (zipWith3 f t t2 t3))));
+
+zipWith4 f xs1 xs2 xs3 xs4 = xs1 (Nil) (\h t -> xs2 (Nil) (\h2 t2 -> xs3 (Nil) ( \h3 t3 -> xs4 Nil (\h4 t4 -> Cons (f h h2 h3 h4) (zipWith4 f t t2 t3 t4)))));
+
+--zipWith f xs1 xs2 = xs1 (Nil) (\h t -> xs2 (Nil) (\h2 t2 -> Cons (f h h2) (zipWith f t t2))); 
+
+--foldmap2 f g z = foldr (compose f g ) z;
+
+--foldl f z xs = xs z (\h t -> foldl f (f z h) t);
+range n m = (< n m) Nil (Cons n ( range (- n  1) m ));
+
+l1 = [ 46,18,50,79,26,71,20, 7,37,42,19,82, 5,66,27,13,95,61,58,78,32,17,45, 9,87,67,14,91,93,73,48,10,69, 4,98, 8,65,35,40,34,24, 2,76,53,81,15,100,63,44,74,90,83,60,36, 3,77,30,29,33,99,70, 1,57,25,22,97,49,41,64,38,92,62,89,56,47,86,55,75,94,39,80,12,96,23,68,11,72, 6,21,54,28,85,59,31,16,43,84,51,52,88 ];
+
+
+sum4 a b c d  = + a (+ b (+ c d));
+
+put x = out (extern 0x10a1fafa) x;
+
+
+
+main =  put (foldr + 0 (zipWith4 sum4 l1 l1 l1 l1)) True ;
+
+
+

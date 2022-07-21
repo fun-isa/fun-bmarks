@@ -1,0 +1,14 @@
+
+data Bool =   False | True ;
+
+
+tak x y z = (< y x) (tak (tak (- x 1) y z) (tak (- y 1) z x) (tak (- z 1) x y)) z;
+
+put x = out (extern 0x10a1fafa) x;
+
+main = put ( tak 23 14 12) True; 
+
+
+
+
+

@@ -1,0 +1,45 @@
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+
+
+--map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+
+--foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+
+--foldmap f g z = compose (foldr f z) (map g);
+
+
+--foldmap2 f g z = foldr (compose f g ) z;
+
+foldl f z xs = xs z (\h t -> foldl f (f z h) t);
+
+foldls f z xs = xs z (\h t ->  (\zs -> zs ! (foldls f zs t)) (h (f z)) );  
+
+range n m = (< n m) Nil (Cons n ( range (- n  1) m ));
+
+l1 = [ 46,18,50,79,26,71,20, 7,37,42,19,82, 5,66,27,13,95,61,58,78,32,17,45, 9,87,67,14,91,93,73,48,10,69, 4,98, 8,65,35,40,34,24, 2,76,53,81,15,100,63,44,74,90,83,60,36, 3,77,30,29,33,99,70, 1,57,25,22,97,49,41,64,38,92,62,89,56,47,86,55,75,94,39,80,12,96,23,68,11,72, 6,21,54,28,85,59,31,16,43,84,51,52,88 ];
+
+l2 = [ 1,2,3 ];
+
+put x = out (extern 0x10a1fafa) x;
+
+
+
+printlist xs = xs (True) (\h t -> put h (printlist t)); 
+
+
+from n = Cons n ( from (+ 1 n));
+
+main =  
+
+--printlist (from 1 );
+
+--put ((\x -> ! x (+ 1 x)) (+ 1 2) ) True;
+
+
+put (foldls + 0 l1) True ;
+
+
+

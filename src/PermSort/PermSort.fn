@@ -1,0 +1,57 @@
+{-
+//// fun benchmark apps
+//// PermSort
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Pair = Pair a b;
+
+put x = out (extern 0x10a1fafa) x;
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+length ls = foldr (\ h t -> + 1 t) 0 ls;
+map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+fromTo n m = (< m n)  (Nil) (Cons n (fromTo (+ n 1) m ));
+head ls = ls Nil (\ h t -> h);
+tail ls = ls Nil (\ h t -> t);
+append xs ys = xs ys (\h t -> Cons h (append t ys));
+filter cond xs = xs Nil (\h t -> (\f -> (cond h) (Cons h  f) f) (filter cond t) ); 
+
+
+concatMap f ls = ls (Nil) (\x xs -> append (f x) (concatMap f xs));
+
+ands a b = case a of {
+          | 1 -> b
+          | 2 -> False
+          }; 
+
+place x ls = ls (Cons (Cons x Nil) Nil) ( \y ys -> Cons (Cons x (Cons y ys)) (map (Cons y) (place x ys))) ;
+
+perm ls = ls (Cons Nil Nil ) (\x xs -> concatMap (place x)  (perm xs));
+
+
+leq a b = (< a b ) True ((== a b) True False );
+
+
+ord ls = ls (True) (\x xs -> ( xs ( True ) (\y ys ->  ands (leq x y) (ord (Cons y ys))   ) ));
+
+printBool x = x (put 1 True) (put 0 True);
+
+permSort xs = head (filter ord (perm xs));
+
+printlist xs = xs (True) (\h t -> put h (printlist t)); 
+
+printList xs = case xs of {
+               | 1 -> put 10 (put 13 True)
+               | 2 -> \h t -> put h (put ',' (printList t)) 
+               };
+
+printll ls = ls (True) (\h t -> (printlist h) (printll t) (False) );
+
+main =  printlist (permSort l1 );
+
+l1 = [ 9,8,7,6,5,4,3,2,1 ];
+
