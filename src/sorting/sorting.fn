@@ -1,0 +1,204 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+
+data Pair = Pair a b;
+
+
+odd x = (== 0 (% x 2)) False True; 
+
+ands a b = a b a;
+
+compose f g x = f(g x);
+
+take n xs = xs (Nil) (\h t -> (== 0 n) Nil (Cons h (take (- n 1) t))  );
+
+drop n xs = xs Nil (\h t ->  (== 0 n) xs (drop  (- n 1) t));
+
+printlist xs = xs (True) (\h t -> put h (printlist t)); 
+
+put x = out (extern 0x10a1fafa) x;
+
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+
+length ls = ls 0 (\h t -> + 1 (length t)); --foldr (\ h t -> + 1 t) 0 ls;
+
+filter cond xs = xs Nil (\h t -> (\f -> (cond h) (Cons h  f) f) (filter cond t) ); 
+
+concat xs ys = xs ys (\h t -> Cons h (concat t ys));    --foldr (Cons) ys xs;
+
+partition p =  foldr (select p) (Pair Nil Nil);
+
+select p x ps = ps (\ts fs -> p x (Pair (Cons x ts) fs) (Pair ts (Cons x fs)));
+
+leq x y = < x y (True) ((== x y) True False);
+
+
+quickSort ls = ls Nil (\x xs -> 
+                        (\lo hi -> concat (quickSort lo) 
+                                          (Cons x (quickSort hi))
+                                          ) 
+                        (filter (\a -> leq a x) xs)
+                        (filter (\a -> > a x) xs)
+                        );
+                        
+                        
+quickSort2 xs = xs Nil (\h t -> (partition (\x -> < x h) t) (\p s -> concat (quickSort (p )) (Cons h (quickSort2 (s )))) );                                          
+
+mergeSort = compose merge_lists (runsplit Nil);
+
+
+isNull ls = ls True (\h t -> False);
+
+
+
+runsplit rl xl = xl (rl Nil (\h t -> Cons rl Nil))
+                    (\x xs -> rl (runsplit (Cons x Nil) xs)
+                                 (\r rs -> (ands (isNull rs) ((> x r) True False))
+                                 (runsplit (Cons r (Cons x Nil)) xs)
+                                 ((leq x r)
+                                    (runsplit (Cons x rl) xs)
+                                    (Cons rl (runsplit (Cons x Nil) xs)))));
+                                              
+
+ 
+merge_lists ls = ls Nil (\x xs -> merge x (merge_lists xs)  );
+
+merge xl yl = yl xl (\y ys -> xl yl (\x xs -> 
+                                  ((== x y) 
+                                   (Cons x (Cons y (merge xs ys)))
+                                     (
+                                      (< x y) 
+                                      (Cons x (merge xs yl) )
+                                        (Cons y (merge xl ys))))));
+
+
+
+
+
+split xs n = xs Nil (\h t -> Pair (take n xs )  (drop  n xs));
+
+
+--merge xs1 xs2 = xs1 xs2 (\h1 t1 -> xs2 xs1 (\h2 t2 -> (leq h1 h2) (Cons h1 (merge t1 xs2)) (Cons h2 (merge xs1 t2))));
+
+
+mergesort xs = xs Nil (\h t -> t xs (\tx ts -> (split xs (/ (length xs) 2)) (\s p -> merge (mergesort (s)) (mergesort (p))) ));
+
+
+reverse xs  = foldl (flip Cons) Nil xs;
+
+foldl f z xs = xs z (\h t -> foldl f (f z h) t);
+
+flip a b c = a c b;
+
+head ls = ls Nil (\ h t -> h);
+
+tail ls = ls Nil (\ h t -> t);
+
+trins rev xs1 xs2 = xs1 (xs2 Nil (\h t -> trins Nil (concat (reverse rev) (Cons h Nil)) t)) 
+                        (\h1 t1 -> xs2 (concat (reverse rev) xs1) (\h2 t2 -> (< h1 h2) (trins (Cons h1  rev) t1 xs2) (trins Nil ( (concat (reverse rev) (Cons h2 xs1))) t2)));
+
+insertSort xs = xs Nil (\h t -> trins Nil (Cons h Nil) t );
+
+----------------------------------------------------
+
+data Tree = Branch a t1 t2 | Tip;
+
+treeSort = compose readTree mkTree;
+
+mkTree = foldr to_tree Tip;
+
+to_tree x tr = tr (Branch x Tip Tip )
+                  (\y l r -> (leq x y) 
+                                (Branch y (to_tree x l) r)
+                                (Branch y l (to_tree x r)));
+
+readTree tr = tr Nil (\x l r -> concat (readTree l) (Cons x (readTree r)));                                
+-----------------------------------------------------
+
+data Tree2  =  Branch2 a l r | Twig2 b | Tip2;
+
+treeSort2 = compose readTree2 mkTree2;
+
+mkTree2 = foldr to_tree2 Tip2;
+
+to_tree2 x tr = tr (Twig2 x)
+                   (\y ->  (leq x y) 
+                           (Branch2 y (Twig2 x) Tip2)
+                           (Branch2 y Tip2 (Twig2 x)) )
+                   
+                   (\y l r -> (leq x y) 
+                                (Branch2 y (to_tree2 x l) r)
+                                (Branch2 y l (to_tree2 x r)));
+
+
+readTree2 tr = tr Nil 
+                 (\y -> Cons y Nil) 
+                 (\x l r -> concat (readTree2 l) (Cons x (readTree2 r))); 
+
+
+---------------------------------------------------------------------
+
+heapSort xs = clear (heap 0 xs);
+
+div2 k = / k 2;
+
+mix t1 t2 = t1 (t2) (\x l1 r1 -> t2 t1 (\y l2 r2 ->  (leq x y)
+                                                     (Branch x (mix l1 r1) t2)
+                                                     (Branch y t1 (mix l2 r2))
+                                                     ));
+
+clear t = t Nil (\x l r -> Cons x (clear (mix l r)));
+
+to_heap k x t = t (Branch x Tip Tip)
+                  (\y l r ->  (ands (leq x y) (odd k))
+                              (Branch x (to_heap (div2 k) y l)r)
+                              ( (leq x y)
+                                (Branch x l (to_heap (div2 k) y r))
+                                ((odd k)
+                                 (Branch y (to_heap (div2 k)x l) r)
+                                 (Branch y l (to_heap (div2 k) x r))
+                              ) ));                                                     
+heap k ls = ls Tip (\x xs ->  to_heap k x (heap (+ k 1) xs));                                                     
+
+------------------------------------------------------------------
+
+range n m = (< n m) Nil (Cons n ( range (- n  1) m ));
+
+l = range 100 1;
+
+sum xs = xs 0 (\h t -> + h (sum t));
+
+
+result xs = + (sum (insertSort xs))
+              (+ (sum (mergeSort xs))
+              (+ (sum (quickSort xs))
+              (+ (sum (quickSort2 xs))
+              (+ (sum (treeSort xs))
+              (+ (sum (treeSort2 xs))
+              )))));
+
+result2 xs =  + (sum (quickSort xs)) 
+                (+ (sum (treeSort xs )) 
+                   (+ (sum (treeSort2 xs)) 
+                      (+ (sum (quickSort2 xs)) 
+                      (+ (sum (insertSort xs)) 
+                       (+  (sum (heapSort xs)) (sum (mergeSort xs)) )))));--(sum (quickSort xs))  ))))); -- )))));
+              
+
+l2 = [ 87,61,88,51,6,98,31,44,33,7,8,100, 5, 3,71,19,22,55,66,34,25,24,90,52,21,54,26,45,20,75,77,35,63,16,4,65,74,60,13,81,1,36,99,97,62,42,83,39,79,30,89,29,76,84,53,95, 9,10,57,23,69,94, 2,67,27,91,50,38,86,56,58,46,47,28,96,14,18,64,41,92,85,72,17,15,37,70,93,12,80,43,11,48,59,68,40,49,82,32,78,73 ];
+
+                                    
+main = 
+
+printlist ( heapSort l );
+
+
