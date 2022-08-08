@@ -1,3 +1,9 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
 
 
 data Bool =   False | True ;
