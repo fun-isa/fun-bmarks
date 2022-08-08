@@ -1,0 +1,52 @@
+{-
+//// fun benchmark apps
+//// Parts
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+data List =  Cons x y | Nil ;
+data Bool =   False | True ;
+
+put x = out (extern 0x10a1fafa) x;
+
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+length ls = foldr (\ h t -> + 1 t) 0 ls;
+append xs ys = xs ys (\h t -> Cons h (append t ys));
+map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+
+concatMap f ls = ls (Nil) (\x xs -> append (f x) (concatMap f xs));
+
+p n = length (partitions n) ;
+
+partitions n = partitionsWith n (countDown n) ;
+
+partitionsWith n ns = case (== n 0) of {
+                        | 1 -> Cons Nil Nil 
+                        | 2 -> concatMap (partitionsWith0 n ns) ns 
+                      } ;
+
+ands x y = x (y) (False);
+
+diff a b = == a b (False) True;
+
+loeq a b = < a b (True) ((== a b) True False);
+
+lts n m = ands ((diff) n m) ((loeq) n m);
+
+
+partitionsWith0 n ns i =  (\ n0 -> (\m -> (  map (Cons i) (partitionsWith n0 (dropWhile (lts m) ns)) )) (min i n0))   ( - n i)  ;
+
+   
+countDown n = (loeq 1 n) (Cons n (countDown (- n 1)))  (Nil) ;
+
+
+min m n = (loeq m n) (m) (n) ;
+
+
+dropWhile p xs = xs (Nil) ( \x xs0 -> (p x) (dropWhile p xs0) xs );
+
+
+main = put (p 18) True ;
+
+
