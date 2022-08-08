@@ -1,0 +1,150 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Pair = Pair a b;
+
+
+put x = out (extern 0x10a1fafa) x;
+putc x =  x (out (extern 0x1000beef));
+
+printlist xs z = xs (z) (\h t -> put h (printlist t z));  
+
+printll lss = lss True (\xs xss -> printlist xs (printll xss ));  
+
+prints s z = s (putc 10 (putc 13 z)) (\h t -> putc h (prints t z)); 
+
+printp1 p z = p (\n ls -> put n (printlist ls z));   
+
+printp2 p z = p (\id pp -> prints id (printp1 pp z));
+
+printlp p z = p z (\h t -> printp2 h (printlp t z) );
+
+printp3 p z = p (\id ls -> prints id (printlp ls z)); 
+
+printlf ls = ls True (\h t -> printp3 h  (printlf t));
+
+
+
+append xs ys = xs ys (\h t -> Cons h (append t ys));
+
+map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+
+filter cond xs = xs Nil (\h t -> (\f -> (cond h) (Cons h  f) f) (filter cond t) ); 
+
+flt z ls = ls z (\x xs -> flt (del z x) xs);
+
+del xs y = xs Nil (\x xs -> (== x y) xs (Cons x (del xs y) ));
+ 
+ldif bs cs = flt bs cs;
+
+geq a b = (> a b) True ((== a b) True False);
+
+sum ls = ls 0 (\h t -> + h (sum t));
+
+head ls = ls (False) (\h t -> h);
+
+null ls = ls (True) (\h t -> False);
+
+
+perms m ls = (== 1 m) (map (\x -> Cons x Nil) ls) (ls Nil (\n ns -> append 
+                                             (map (Cons n) (perms (- m 1) ns)) 
+                                             (perms m ns)
+                                             ));
+                                             
+
+
+awards scores = append (award scores (Pair "Gold" 70)) 
+                       (append (award scores (Pair "Silver" 60)) (award scores (Pair "Bronze" 50)));
+
+award scores pp = pp (\name threshold -> 
+           map (\ps -> (Pair name ps)) (sort2 (atleast threshold scores)));
+
+sumscores scores = map (\p -> (Pair (sum p) p)) (perms 3 scores);      
+
+atleast threshold scores = filter (\p -> p (\sum p -> geq sum threshold)) (sumscores scores);
+
+    
+findawards scores = (\theawards ->  (\firstaward ->
+                  firstaward (\award pp -> 
+                   pp (\sum perm -> 
+                  (null theawards)
+                     (Nil)
+                     (Cons firstaward (findawards(ldif scores perm)))
+))
+) (head theawards)  ) (awards scores);  
+
+findallawards competitors = map (\p -> p (\name scores -> (Pair name (findawards scores)))) competitors;
+
+competitors = [
+		(Pair "Simon" [ 35,27,40,19,34,21 ]), 
+		(Pair "Hans" [ 23,19,45,17,10,5,8,14 ]),
+		(Pair "Phil" [ 1,18,35,20,21,19,34,8,16,21 ]),
+		(Pair "Kevin" [ 9,23,17,54,18,41,9,18,14 ])
+	      ];
+
+leq xp yp a b = xp (\x xs -> yp (\y ys -> (< x y) a ((== x y) a b)));
+
+sort l = qsort (leq) l Nil;
+
+qsort le ls r = ls (r)
+                   (\x xs -> xs (Cons x r) (\h t ->
+                             (qpart le x xs Nil Nil r)));
+
+qpart le x ls rlt rge r = ls 
+                          (rqsort le rlt (Cons x (rqsort le rge r)))
+                          (\y ys -> (le x y)
+                                    (qpart le x ys rlt (Cons y rge)r)
+                                    (qpart le x ys (Cons y rlt)rge r)
+                          );
+
+rqsort le ls r = ls (r)
+                    (\x xs -> xs (Cons x r) (\h t -> 
+                        rqpart le x xs Nil Nil r));
+                        
+rqpart le x ls rle rgt r = ls 
+                           (qsort le rle (Cons x (qsort le rgt r)))
+                           (\y ys -> (le y x)
+                                   (rqpart le x ys (Cons y rle) rgt r)
+                                   (rqpart le x ys rle (Cons y rgt) r)
+                           );
+                           
+------------------------------------------------                      
+data BinTree = Branch x l r | Tip;
+data Trio = Trio x l r;
+data Either = Right b | Left a;
+
+
+gt_p xp yp a b = xp (\x xs -> yp (\y ys -> (> x y) a ((== x y) a b)));
+
+bintree_hylo d a f = Fix (\n t -> (d t) (\l -> a) (\r -> r (\x l r -> f x (n l) (n r))));
+
+sort2 l = bintree_hylo split2 Nil join l;
+
+split2 ls = ls (Left Nil)
+              (\x l -> (partition (gt_p x) l) (\s g -> Right (Trio x s g)));
+
+partition p =  foldr (select2 p) (Pair Nil Nil);
+
+join x l r = concat l (Cons x r);
+
+concat xs ys = xs ys (\h t -> Cons h (concat t ys));
+
+select2 p x ps = ps (\ts fs -> p x (Pair (Cons x ts) fs) (Pair ts (Cons x fs)));
+
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+
+
+main = 
+
+printlf (findallawards (competitors));
+
+
+
+
+

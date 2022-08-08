@@ -1,0 +1,110 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Pair = Pair x y;
+
+
+leq x y = < x y (True) ((== x y) True False);
+
+put x = out (extern 0x10a1fafa) x;
+printlist xs = xs (True) (\h t -> put h (printlist t)); 
+
+value ls v k = ls (Nil) (\p s -> p (\x y ->  (== x v) (k y) ( value s v k)  ));
+
+update ls v k i = ls (k Nil) (\p s -> p (\x y -> (== x v) (update s v (upd k v i) i) (update s v (upd k x y) i)));
+
+upd k x y s = k (Cons (Pair x y) s);
+
+
+int n k = (== 0 n) (k 0) (k n);
+
+bool b k = b (k True) (k False);
+
+adds k a b = k (+ a b);
+
+subs k a b = k (- a b);
+
+eqs k a b = k ((== a b) True False);
+
+leqs k a b = k (leq a b) ;
+
+notk k b = b (k False) (k True);
+
+andk k b a = b (k a) (k False);
+
+seq f g k = f (comp g k);
+
+comp f g x = f(g x);
+
+data Aval =  Sub a1 a2 | Add a1 a2 | V x | N n;
+
+aval av s k = av (\n -> k n)
+                 (\x -> value s x k)
+                 (\a1 a2 ->  seq (aval a1 s) (aval a2 s) (adds k))
+                 (\a1 a2 ->  seq (aval a1 s) (aval a2 s) (subs k));
+
+data Bval =  And a1 a2 | Neg b  |  Le a1 a2  |  Eq a1 a2  | False_w | True_w;
+
+bval bv s k = bv (k True)
+                 (k False)
+                 (\a1 a2 -> seq (aval a1 s) (aval a2 s) (eqs k))
+                 (\a1 a2 -> seq (aval a1 s) (aval a2 s) (leqs k))
+                 (\b -> bval b s (notk k))
+                 (\a1 a2 -> seq (bval a1 s) (bval a2 s) (andk k));
+                 
+data Soss =  While b s | If b s1 s2 | Comp s1 s2 |  Skip | Ass x a;
+
+data Fin =  Inter ss10 s0 | Final s0;
+
+sosstm sst s = sst (\x a -> aval a s (update s x Final)) 
+                   (Final s)
+                   (\s1 s2 ->  (sosstm s1 s) 
+                               (\s0 -> Inter s2 s0) 
+                               (\ss10 s0 -> Inter (Comp ss10 s2) s0) )
+                   (\b ss1 ss2 -> bval b s (cond s ss1 ss2) )
+                   (\b ss -> Inter (If b (Comp ss (While b ss)) Skip) s );
+                   
+cond s ss1 ss2 c = c (Inter ss1 s)
+                     (Inter ss2 s);
+                     
+run f = f (\s -> s) 
+          (\ss s -> run (sosstm ss s));
+          
+ssos ss s = run (Inter ss s);
+
+id x = x;
+
+divide =  While (Le (V 1) (V 0))
+               (Comp (Ass 0 (Sub (V 0) (V 1)))
+                     (Ass 2 (Add (V 2) (N 1))));
+                     
+callDivide = Comp (Ass 0 (V 3))
+                      (Comp (Ass 1 (V 4)) divide);
+                      
+ndivs = Comp (Ass 4 (V 3))
+              (While (Neg (Eq (V 4) (N 0))) (
+                Comp callDivide
+                     (Comp (If (Eq (V 0) (N 0)) (Ass 5 (Add (V 5) (N 1))) Skip)
+                           (Ass 4 (Sub (V 4) (N 1))))
+              ));
+              
+sinit = Cons (Pair 0 0) (
+             Cons (Pair 1 0) (
+             Cons (Pair 2 0) (
+             Cons (Pair 3 10000) (
+             Cons (Pair 4 0) (
+             Cons (Pair 5 0) Nil))))); 
+ 
+example = value (ssos ndivs sinit) 5 id;
+
+main = put (example) True;
+ 
+              
+

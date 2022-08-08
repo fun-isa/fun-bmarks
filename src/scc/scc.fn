@@ -1,0 +1,112 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+
+data Edge = Edge x y;
+
+
+stronglyConnComp es vs = 
+           snd (span_tree (new_range (reversed_edges es ))
+                   (Edge Nil Nil)
+                   ( snd (dfs (new_range es) (Edge Nil Nil) vs) )
+        );
+
+
+dfs r v ls = ls (v) (\x xs -> v (\vs ns -> 
+              (elem x vs) 
+                  (dfs r v xs)
+                  ((dfs r (Edge (Cons x vs) (Nil)) (r x)) (\vs' ns' ->  dfs r (Edge vs' (append(Cons x ns')ns)) xs ))));
+
+
+append xs ys = xs ys (\h t -> Cons h (append t ys));
+
+concat lss = lss (Nil) (\xs xss -> append xs (concat xss));
+
+
+span_tree r es ls = ls es (\x xs -> es (\vs ns ->
+                   (elem x vs)
+                      (span_tree r es xs)
+                      ((dfs r (Edge (Cons x vs ) (Nil)) (r x))
+                        (\vs' ns' ->  
+                          span_tree r (Edge vs' (Cons (Cons x ns') ns ) ) xs ) ) ));
+
+--ok
+new_range ls w = ls Nil (\p xys -> p (\x y -> 
+                 (== w x) 
+                   (Cons y (new_range xys w))
+                   (new_range xys w)
+                   ));
+
+
+swap p = p (\x y -> Edge y x);
+
+reversed_edges es = map swap es;
+
+
+ 
+a = 1;
+b = 2;
+c = 3;
+d = 4;
+f = 5;
+g = 6;
+h = 7;
+ 
+vertices =  [ a,b,c,d,f,g,h ];
+
+	     
+edges = [    (Edge b a),
+	     (Edge c b),
+	     (Edge c d),
+	     (Edge c h),
+	     (Edge d c),
+	     (Edge f a),
+	     (Edge f g),
+	     (Edge f h),
+	     (Edge g f),
+	     (Edge h g)  ];	     
+	     
+
+map f ls = ls (Nil) (\h t -> Cons (f h) (map f t)); 
+
+ors y x = y True x;
+
+snd p = p (\f s -> s); 
+ 
+elem x ls = ls False (\y ys -> ((== x y) True (elem x ys)));
+
+
+printEdge p z = p (\a b -> put a (put b z));  
+
+printEdges ls z = ls z (\h t -> printEdge h (printEdges t z));  
+ 
+put x = out (extern 0x10a1fafa) x;
+
+printlist xs z = xs (z) (\h t -> put h (printlist t z));  
+ 
+printll lss = lss True (\xs xss -> printlist xs (printll xss ));  
+ 
+ll = [ [ 1,2,3 ] , [ 4,5,6 ] ]; 
+
+l2 = [ 1,2,3,4 ];
+ 
+printbool b = b (put 1 True) (put 0 True); 
+ 
+main = 
+
+printll (stronglyConnComp edges vertices);
+
+
+
+
+
+
