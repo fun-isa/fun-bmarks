@@ -1,0 +1,46 @@
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+
+put x = out (extern 0x10a1fafa) x;
+printlist xs = xs (True) (\h t -> put h (printlist t));
+
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+
+length ls = ls 0 (\ h t -> + 1 (length t)) ;
+
+filter cond xs = xs Nil (\h t -> (\f -> (cond h) (Cons h  f) f) (filter cond t) ); 
+
+concat xs ys = foldr (Cons) ys xs;
+
+ands a b = case a of {
+          | 1 -> b
+          | 2 -> False
+          };    
+
+nots x = x False True;
+
+solve nq = length (generate nq nq);
+
+generate nq n = (== 0 n) (Cons Nil Nil) (concatMapAddOne nq (generate nq (- n 1)));
+
+concatMapAddOne nq xs = xs Nil (\a b -> concat (addOne nq a) (concatMapAddOne nq b) );
+
+addOne nq xs = filterOk (mapCons xs (upto 1 nq)); 
+
+filterOk xs = xs Nil (\a b -> (ok a) (Cons a (filterOk b)) (filterOk b));
+
+mapCons xs ys = ys Nil (\a b -> Cons (Cons a  xs) (mapCons xs b ) );
+
+ok xs = xs True (\a b -> safe a 1 b );
+
+safe x d ys = ys True (\a b -> ands (ands (ands (nots(== x a)) (nots(== x (+ a d)))) (nots(== x (- a d)))) (safe x (+ 1 d) b));
+
+upto n m = (< m n) Nil (Cons n (upto (+  1 n) m )) ;
+
+
+main = put (solve 10) True;
+
+
+
