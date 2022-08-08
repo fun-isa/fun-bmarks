@@ -1,0 +1,33 @@
+{-
+//// fun benchmark apps
+//// sieve
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+
+take n xs = xs (Nil) (\h t -> (== 0 n) Nil (Cons h (take (- n 1) t))  );
+
+put x = out (extern 0x10a1fafa) x;
+
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+
+range n m = (> n m) Nil (Cons n ( range (+ 1 n) m ));
+
+xfilter x xs = xs Nil (\h t -> (== 0 (% h x)) (xfilter x t) (Cons h (xfilter x t)));
+
+sieve xs = xs Nil (\h t -> (Cons h (sieve (xfilter h t))));
+
+ones = Cons 1 ones;
+
+printlist xs = xs (True) (\h t -> put h (printlist t)); 
+
+from n = Cons n (from (+ 1 n));
+
+sp f g x = Cons (f x) (g x); 
+
+main = printlist (sieve(range 2 250));
+
