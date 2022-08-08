@@ -13,4 +13,4 @@ How structured combinators are distributed over benchmark applications, so far? 
 
 ### TODO
 
-As more programs are included in the current test list, we expect to fill more of the gaps of the distribution above. However this is not guaranteed. Our observation is that most Haskell benchmarks from ![nofib](https://github.com/ghc/nofib/) end up using similar data structures and recursion patterns. The result is that these programs tend to cluster around a few reduction patterns.
+As more programs are included in the current test list, we expect to fill more of the gaps of the distribution above. However, this is not guaranteed. Our observation is that most Haskell benchmarks from ![nofib](https://github.com/ghc/nofib/) end up using similar data structures and recursion patterns. The result is that these programs tend to cluster around a few reduction patterns.
