@@ -1,0 +1,64 @@
+{-
+//// fun benchmark apps
+//// exp 3 8 - catamorphism
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data Nat = Succ a | Zero;
+data Bool =  False | True ;
+
+fmap_p f n =  n  Zero (\a -> Succ (f a ));
+
+compose f g x = f (g x);
+
+adds x y = x y (\a -> Succ (adds a y));
+muls x y  = y (Zero) (\a -> (adds (muls x a) x));
+
+toNat x = (< x 1) Zero (Succ (toNat (- x 1)));
+toInt n = n (0) (\a -> (+ 1 (toInt a))); 
+
+pows x y = y (Succ Zero) (\a -> muls x (pows x a));
+
+powM x y = natC (Succ Zero) (mulM x) y;
+
+powMM x y = nats (Succ Zero) (mulMM x) y;
+
+n1 = Succ Zero;
+n2 = Succ(n1);
+n3 = Succ(n2);
+n4 = Succ(n3);
+n5 = Succ(n4);
+n6 = Succ(n5);
+n7 = Succ(n6);
+n8 = Succ(n7);
+n9 = Succ(n8);
+n10 = Succ(n9);
+
+cata f alg x = alg (f (cata f alg) x);
+
+natC z next = (cata fmap_p) (\b -> b z (\a -> next a) );
+
+nats z f  = Fix (\s n ->  n z (\a -> f (s a)));
+
+incM x = Succ x;
+
+addMM x y = nats y Succ x;
+
+addM x y = natC y Succ x;
+
+mulM x y = natC Zero (addM y) x;
+
+mulMM x y = nats Zero (addMM y) x;
+
+toIntM  = cata fmap_p (\x -> x 0 (+ 1)) ; 
+
+put x = out (extern 0x10a1fafa) x;
+
+main = put (toIntM(powMM n3 n8)) True;
+
+
+
+
+
