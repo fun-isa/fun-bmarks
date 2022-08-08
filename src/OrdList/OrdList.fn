@@ -1,0 +1,49 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data List =  Cons x y | Nil ;
+data Bool =   False | True ;
+
+put x = out (extern 0x10a1fafa) x;
+
+implies x y = x (y) (True);
+
+ands x y = x (y) (False);
+
+andList ls = ls (True) (\x xs -> ands x (andList xs));
+
+append xs ys = xs ys (\h t -> Cons h (append t ys));
+
+map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+
+ord ls = ls (True) (\x xs -> xs True (\y ys -> ands (implies x y) (ord (Cons y ys))  ));
+
+insert x ls = ls (Cons x Nil) ( \y ys -> (implies x y) (Cons x (Cons y ys)) (Cons y (insert x ys)));
+
+
+prop x xs = implies (ord xs) (ord (insert x xs));
+
+data Nat =  S n | Z;
+
+boolList nat = nat (Cons Nil Nil) (\n -> (append (boolList n)
+         (append (map (Cons False) (boolList n))
+                 (map (Cons True) (boolList n)))) );
+
+
+top n = andList (append (map (prop True) (boolList n))
+                        (map (prop False) (boolList n)));
+
+main = put( (\eleven -> 
+         case (top eleven) of {
+           | 1 -> 1 
+           | 2 -> 0
+         }) (S (S (S (S (S (S (S (S (S (S (S Z)))))))))))
+) True;
+
+
+
