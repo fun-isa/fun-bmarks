@@ -1,0 +1,132 @@
+{-
+//// fun benchmark apps
+//// Adjxoxo
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data Result =  Draw  | Loss | Win ;
+data Cmp =    Lt | Eq | Gt;
+data Player =  O | X ;
+
+showResult p = p ("Win") 
+                 ("Loss")
+                 ("Draw");
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Pair = Pair a b;
+
+putc x = out (extern 0x1000beef) x;
+put x = out (extern 0x10a1fafa) x;
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+length ls = foldr (\ h t -> + 1 t) 0 ls;
+map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+
+printBool x = x (printString "True") (printString "False");
+
+fromTo n m = ( leq n m)  (Cons n (fromTo (+ 1 n) m )) (Nil) ;
+
+orl  x y = x (True) (y);
+
+null ls = ls (True) (\h t -> False);
+
+bestOf r1 r2 = r1 (Win) r2 (r2 (Win) (Draw) (Draw)); 
+
+leq a b = (< a b ) True ((== a b) True False );
+
+inverse : Result -> Result;
+inverse r = r (Loss) (Win) (Draw); 
+
+
+cmp a b = (== a b) Eq ((leq a b) Lt Gt);
+
+insert x ls = case ls of{
+              | 1 -> Cons x Nil
+              | 2 -> \y ys -> case (leq x y) of {
+                                 | 1 -> Cons x (Cons y ys)
+                                 | 2 -> Cons y (insert x ys)
+                                 }
+              };
+--    
+--    
+diff ls lss = case ls of{
+             | 1 -> Nil
+             | 2 -> \x xs -> case lss of{
+                                | 1 -> Cons x xs    
+                                | 2 -> \y ys -> case (cmp x y)of{
+                                                   | 1 -> diff (Cons x xs) ys
+                                                   | 2 -> diff xs ys
+                                                   | 3 -> Cons x (diff xs (Cons y ys))
+                                                   }
+                                 }
+             };
+
+subset xs ys = null (diff xs ys);
+
+
+foldr1 f ls = ls  (printString "erro") (\x xs -> xs (x) (\h t ->  f x (foldr1 f xs) ));
+
+hasLine p =
+  orl (subset (Cons 1 (Cons 2 (Cons 3 Nil))) p)
+    (orl (subset (Cons 4 (Cons 5 (Cons 6 Nil))) p)
+      (orl (subset (Cons 7 (Cons 8 (Cons 9 Nil))) p)
+        (orl (subset (Cons 1 (Cons 4 (Cons 7 Nil))) p)
+          (orl (subset (Cons 2 (Cons 5 (Cons 8 Nil))) p)
+            (orl (subset (Cons 3 (Cons 6 (Cons 9 Nil))) p)
+              (orl (subset (Cons 1 (Cons 5 (Cons 9 Nil))) p)
+                (subset (Cons 3 (Cons 5 (Cons 7 Nil))) p)))))));
+--                                                 
+gridFull ap pp = (==) ((+) (length ap) (length pp)) 9;  
+--              
+
+analysis ap pp =
+  case (hasLine pp) of {
+    | 1 -> Loss
+    | 2 ->
+      case (gridFull ap pp) of {
+        | 1 -> Draw
+        | 2 -> foldr1 bestOf (map (moveval ap pp)
+                   (diff (diff (fromTo 1 9) ap) pp))
+      }
+  };
+
+moveval ap pp m = inverse (analysis pp (insert m ap));
+
+adjudicate os xs =
+  case (cmp (length os) (length xs)) of {
+    | 1 -> report (analysis os xs) O
+    | 2 -> case (hasLine xs) of {
+            | 1 -> report Win X
+            | 2 -> case (hasLine os) of {
+                       | 1 -> report Win O
+                       | 2 -> report (analysis xs os) X
+                     }
+          }
+    | 3 -> report (analysis xs os) X
+  };
+
+report r s = case r of{
+             | 1 -> side s
+             | 2 -> side (opp s)
+             | 3 -> "Draw"
+             }; 
+
+opp p = case p of {
+        | 1 -> O
+        | 2 -> X
+        };
+--        
+side p = case p of {
+        | 1 -> "X"
+        | 2 -> "O"
+        };        
+
+
+printString str = str (True) (\h t -> putc h (printString t)); 
+printlist xs = xs (printString "[]") (\h t -> put h (printlist t)); 
+
+main =  printString (adjudicate Nil Nil);
+
+              
