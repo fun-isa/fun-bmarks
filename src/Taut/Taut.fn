@@ -1,0 +1,110 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Pair = Pair a b;
+
+put x =  x (out (extern 0x10a1fafa));
+
+printboolList ls c = ls (c) (\h t -> h (put 1) (put 0) (printboolList t c)   );
+
+printBool x = x (put 1 True) (put 0 True);
+
+append xs ys = xs ys (\h t -> Cons h (append t ys));
+map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+zipWith f xs1 xs2 = xs1 (Nil) (\h t -> xs2 (Nil) (\h2 t2 -> Cons (f h h2) (zipWith f t t2)));
+zip xs1 xs2 = xs1 (Nil) (\h t -> xs2 (Nil) (\h2 t2 -> Cons (Pair h h2) (zip  t t2)));
+length ls = foldr (\ h t -> t (+ 1) ) 0 ls;
+filter cond xs = xs Nil (\h t -> (\f -> (cond h) (Cons h  f) f) (filter cond t) ); 
+foldl f z xs = xs z (\h t -> foldl f (f z h) t);
+reverse xs  = foldl (flip Cons) Nil xs;
+
+flip a b c = a c b;
+
+bls = [ True, True ];
+
+andL xs = xs True (\b bs ->  b (andL bs) False); 
+                
+
+find key ls = ls (Nil) 
+                 (\h t ->  h (\k v ->  (== key k) v (find key t)));
+
+
+data Pred = Implies p q | And p q | Not p | Var x | Const b ;
+
+eval s p =  p (\b -> b)
+              (\x -> find x s)
+              (\pp ->  (eval s pp) False True)
+              (\pp qq -> (eval s pp) (eval s qq) False )
+              (\pp qq -> (eval s pp) (eval s qq) True );
+
+vars e = e (\b -> Nil) 
+           (\x -> Cons x Nil)
+           (\p -> vars p)
+           (\p q -> append (vars p) (vars q))
+           (\p q -> append (vars p) (vars q)); 
+                            
+
+bools n = ( n (== 0)) (Cons Nil Nil) ((\bss -> append (map (Cons False) bss)
+                                 (map (Cons True) bss)) (bools (- n 1)));
+
+
+neq x y = ( x (y ==)) False True;      
+
+rmdups ls = ls Nil (\x xs -> Cons x (rmdups (filter (neq x) xs)));
+
+substs p = (\vs -> map (zip vs) (bools (length vs))) (rmdups (vars p));          
+
+isTaut p = andL (map (flip eval p) (substs p)) ;
+
+imp v = Implies (Var 'p') (Var v) ;
+
+loo = [ 1,1,1,1,1,1,2,3,3,4,4,5 ]; --
+
+names = "abcdefghijklmn" ;
+
+testProp = Implies
+             (foldr1 And (map imp names))
+             (Implies (Var 'p') (foldr1 And (map Var names))) ;
+
+foldr1 f ls = ls  (printString "erro") (\x xs -> xs (x) (\h t ->  f x (foldr1 f xs) ));  --(foldr1 f xs)
+
+ 
+printplist xs = xs (True) (\h t -> printpair h (printplist t)); 
+
+printlist xs = xs (True) (\h t -> put h (printlist t)); 
+
+printpair p c = p (\f s ->  put f (put s c) ); 
+
+head ls = ls Nil (\ h t -> h);
+tail ls = ls Nil (\ h t -> t);
+
+putc x =  x (out (extern 0x1000beef));
+
+printString str = str (True) (\h t -> putc h (printString t)); 
+
+showInt n = reverse (showInt_ n) ;
+showInt_ n = (( n (== 0)) Nil ( Cons ((n % 10) + 48  ) (showInt_ (n / 10))));
+
+appMap  f ls = ls (Nil) (\h t ->  (f h) (appMap f t)); 
+
+showChar ch = Cons ch Nil;
+
+showPred p = p (\b ->  append "Const " (showChar b)) 
+               (\x ->  (append "Var " (showChar x)))
+               (\b ->  append "Not " (showPred b))
+               (\x a -> append(append(append (append "And ("     (showPred x)) (") (")) (showPred a)) ")")
+               (\x a -> append(append(append (append "Implies (" (showPred x)) (") (")) (showPred a)) ")");
+
+
+main =  (isTaut testProp)  (printString "True") (printString "False");
+
+

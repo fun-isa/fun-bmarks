@@ -1,0 +1,62 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Quad = Quad a b c d;
+
+
+leq a b = (< a b ) True ((== a b) True False );
+
+signum n = (== 0 n) 0 ((< 0 n) (1) (-1));
+
+eContFrac = (Cons 2 (aux 2)); 
+
+aux n =   Cons 1 (Cons n (Cons 1 (aux (+ 2 n))) );
+
+abs c = (> 0 c) (- 0 c) c;
+
+
+ands x y = x y (False);
+ors x y = x True y; 
+
+ratTrans qd ls = qd (\a b c d -> ( \q ->  
+              (ands ( ands 
+               
+               (ors (== (signum c) (signum d) True False)  (< (abs c) (abs d)True False )) 
+               
+               (leq (* (+ c d) q )(+ a b)) )
+               
+               (> 
+                  (+(*(+ c d)q) (+ c d)) 
+                  (+ a b )
+                  True
+                  False)
+               )
+               (Cons q (ratTrans (Quad (c) (d) (- a (* q c)) (- b (* q d))) ls)) 
+               (
+               ls Nil (\x xs -> 
+                ratTrans (Quad (b) (+ a (* x b)) (d) (+ c (* x d)) ) xs
+                  )
+               )) (/ b d)
+               );
+
+
+takeDigits n ls = (== 0 n) Nil (ls Nil  (\x xs -> Cons x (takeDigits (- n 1) (ratTrans (Quad 10 0 0 1) xs ))));
+
+
+e n = takeDigits n eContFrac;
+
+
+printlist xs = xs (True) (\h t -> put h (printlist t)); 
+put x = out (extern 0x10a1fafa) x;
+
+main = printlist (e 100); 
+
+

@@ -1,0 +1,60 @@
+{-
+//// fun benchmark apps
+//// sorting
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Pair = Pair a b;
+
+put x = out (extern 0x10a1fafa) x;
+
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+
+length ls = foldr (\ h t -> + 1 t) 0 ls;
+
+map f ls = ls (Nil) (\h t -> Cons (f h) (map f t));
+
+fromTo n m = (< m n)  (Nil) (Cons n (fromTo (+ 1 n) m ));
+head ls = ls Nil (\ h t -> h);
+tail ls = ls Nil (\ h t -> t);
+
+append xs ys = xs ys (\h t -> Cons h (append t ys));
+
+filter cond xs = xs Nil (\h t -> (\f -> (cond h) (Cons h  f) f) (filter cond t) ); 
+
+concatMap f ls = ls (Nil) (\x xs -> append (f x) (concatMap f xs));
+
+init ls = ls Nil (\x xs ->  xs Nil (\y ys ->  Cons x (init (Cons y ys))) );
+
+inits xs = xs (Cons Nil Nil) (\y ys -> Cons xs (inits (init xs)) );
+
+tails ls = ls Nil (\x xs -> Cons (Cons x xs) (tails xs));
+
+segments xs = concatMap tails (inits xs);
+
+maximum ls  = ls 0 (\h t -> max h t);
+
+upto n m = (< m n) Nil (Cons n (upto (+ 1 n) m )) ;
+
+max m ls = ls m (\x xs -> (leq m x) (max x xs) (max m xs));
+
+sum ls = ls 0 (\x xs -> + x (sum xs));
+
+mss xs = maximum (map sum (segments xs));
+
+leq a b = (< a b ) True ((== a b) True False );
+
+-----------------------------------------------
+
+printlist xs = xs (True) (\h t -> put h (printlist t)); 
+
+l1 = Nil;
+
+printBool x = x (put 1 True) (put 0 True);
+
+main = put (mss (upto (0) 150)) True;
+
