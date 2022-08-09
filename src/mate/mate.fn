@@ -1,0 +1,375 @@
+{-
+//// fun benchmark apps
+//// mate
+//// AUTHOR: cecaccetti at sjtu edu cn
+//// (C)2022 SHANGHAI JIAOTONG UNIVERSITY 
+-}
+
+
+data Bool =   False | True ;
+data List =  Cons x y | Nil ;
+data Pair = Pair x y;
+data Maybe = Just x | Nothing;
+
+
+leq x y = (< x y) True ((== x y) True False);
+
+put x = out (extern 0x10a1fafa) x;
+
+id x = x ;
+
+const c x = c ;
+
+inc n = (+) n 1 ;
+
+dec n = (-) n 1 ;
+
+min x y = (leq x y) x y;
+max x y = (leq x y) y x;
+
+abs n = (leq 0 n) n (- 0 n);
+
+plus a b = + a b;
+
+minus a b = - a b;
+
+no mb = mb True (\x -> False);
+
+maybe n j mb = mb n (\x -> j x);
+
+con b q = b q False;
+
+dis b q = b True q;
+
+fst ps = ps (\x y -> x);
+
+snd ps = ps (\x y -> y);
+
+cross p1 p2 = p1 (\f g -> p2 (\x y -> Pair (f x) (g y)));
+
+null ls = ls True (\x xs -> False);
+
+append ls ys = ls ys (\x xs -> Cons x (append xs ys));
+
+elemAt ls n = ls (\x xs -> (== 0 n) x (elemAt xs (- n 1)));
+
+map f ls = ls Nil (\x xs -> Cons (f x) (map f xs));
+
+concatMap f ls = ls Nil (\x xs -> append (f x) (concatMap f xs));
+
+any p ls = ls False (\x xs -> dis (p x) (any p xs));
+
+foldr f z ls = ls (z) (\h t -> f h (foldr f z t));
+
+sumAcc acc ls = ls acc (\x xs -> sumAcc (+ acc x) xs);
+
+sum xs = sumAcc 0 xs;
+
+unzip ls = ls (Pair Nil Nil) (\p xys -> p (\x y -> (unzip xys) (\f s -> Pair (Cons x f) (Cons y s))));
+
+
+data Kind =  Pawn | Knight | Bishop | Rook | Queen | King;
+
+data Board = Board wtss bkss;
+
+data Color = White | Black;
+
+data MoveInFull = MoveInFull p sqFrom mv;
+
+data Solution = Solution mif rs;
+
+kindToChar k = k 'K'
+                 'Q'
+                 'R'
+                 'B'
+                 'N'
+                 'P';
+                 
+isKing k = == 'K' (kindToChar k);
+
+pieceAt bd sq = bd (\wkss bkss -> 
+  pieceAtWith sq White (pieceAtWith sq Black Nothing bkss) wkss) ;
+                 
+pieceAtWith sq c n ls = ls n (\p xs -> p (\k s -> 
+                               (sameSquare s sq)
+                               (Just (Pair c k))
+                               (pieceAtWith sq c n xs)
+                               ));
+
+emptyAtAll bd e = bd (\wkss bkss -> emptyAtAllAnd e (emptyAtAllAnd e True bkss) wkss );
+
+emptyAtAllAnd e b ls = ls b (\ps xs -> ps (\k s ->
+                                 (e s) False (emptyAtAllAnd e b xs)));
+
+rmPieceAt cl sq bd = bd (\wkss bkss -> cl (Board wkss (rPa sq bkss))
+                                          (Board (rPa sq wkss) bkss)
+                                          );
+rPa sq ls = ls (\ks kss -> ks (\k s -> (sameSquare s sq)
+                                       kss
+                                       (Cons ks (rPa sq kss))));
+                                       
+putPieceAt sq ps bd = ps (\c k -> bd (\wkss bkss ->
+                            c (Board wkss (Cons (Pair k sq) bkss))
+                              (Board (Cons (Pair k sq) wkss) bkss)));                                                         
+kingSquare c b = kSq (forcesColoured c b) ;
+
+kSq ls = ls (Nil)
+            (\ps kss -> ps (\k s -> 
+                      (isKing k) s (kSq kss)));
+                      
+                 
+opponent p = p White Black;
+
+colourOf p = p (\c k -> c);
+kindOf p = p (\c k -> k);
+
+rank p = p (\f r -> r);
+file p = p (\f r -> f);
+    
+sameColour c1 c2 = c1 (c2 True False)
+                      (c2 False True);                 
+                 
+                 
+sameSquare p1 p2 = p1 (\f1 r1 -> p2 (\f2 r2 ->  con ((==) f1 f2) ((==) r1 r2)));
+
+onboard ps = ps (\p q -> con (con ((leq) 1 p) ((leq) p 8))
+      (con ((leq) 1 q) ((leq) q 8)));                  
+
+forcesColoured c bd = c (bd (\wkss bkss -> bkss) (\wkss bkss -> wkss));
+
+moveDetailsFor c bd =
+  concatMap (movesForPiece c bd) (forcesColoured c bd) ;
+
+movesForPiece c bd p =
+  concatMap (tryMove c bd p) (rawmoves c p bd) ;
+  
+data Move = Move sqTo mcp mpp; 
+  
+tryMove c bd ps mv = ps (\k sqFrom -> 
+                        mv (\sqTo mcp mpp ->
+                          (\p -> 
+                           (\bd1 pp -> 
+                                (\bd2 ->
+                                     (kingincheck c bd2 )
+                                     (Nil)
+                                     (Cons (Pair (MoveInFull p sqFrom (Move sqTo mcp mpp)) bd2) Nil)) (maybe (putPieceAt sqTo pp bd1)  (const (putPieceAt sqTo pp (rmPieceAt (opponent c) sqTo bd1))) mcp)
+                                          ) 
+                                          (rmPieceAt c sqFrom bd) 
+                                         (maybe p id mpp)
+                                          )(Pair c k) 
+                                          ));
+                                         
+                                           
+  
+rawmoves c ps bd = ps (\k sq -> (\m -> m c sq bd) 
+                                (k kingmoves
+                                   queenmoves
+                                   rookmoves
+                                   bishopmoves
+                                   knightmoves
+                                   pawnmoves
+                                      ));
+                   
+bishopmoves c sq bd =
+        append (moveLine bd c sq (cross (Pair dec inc))) (
+        append (moveLine bd c sq (cross (Pair inc inc))) (
+        append (moveLine bd c sq (cross (Pair dec dec)))
+               (moveLine bd c sq (cross (Pair inc dec))) )) ;
+               
+rookmoves c sq bd =
+        append (moveLine bd c sq (cross (Pair dec id))) (
+        append (moveLine bd c sq (cross (Pair inc id))) (
+        append (moveLine bd c sq (cross (Pair id dec)))
+               (moveLine bd c sq (cross (Pair id inc))) )) ;               
+               
+moveLine bd c sq inc = (\incsq ->
+                          (onboard incsq)
+                           ( (pieceAt bd incsq)
+                             (Cons (Move incsq Nothing Nothing) (moveLine bd c incsq inc))
+                             (\p -> (sameColour (colourOf p) c)
+                                     Nil
+                                     (Cons (Move incsq (Just p) Nothing) Nil) ))
+                           (Nil)) (inc sq);               
+               
+kingmoves c ps bd = ps (\p q -> 
+                       (\pi pd qi qd -> sift c bd Nil
+       (Cons (Pair pd qi) (Cons (Pair p qi) (Cons (Pair pi qi)
+       (Cons (Pair pd q )                   (Cons (Pair pi q )
+       (Cons (Pair pd qd) (Cons (Pair p qd) (Cons (Pair pi qd)
+       Nil))))))))) (+ 1 p) (- p 1) (+ 1 q) (- q 1) 
+                         );              
+                 
+knightmoves c ps bd = ps (\p q -> 
+                         (\pi pd qi qd pi2 pd2 qi2 qd2 -> sift c bd Nil
+                 (Cons (Pair pd qi2) (Cons (Pair pi qi2)
+       (Cons (Pair pd2 qi)                     (Cons (Pair pi2 qi)
+       (Cons (Pair pd2 qd)                     (Cons (Pair pi2 qd)
+                 (Cons (Pair pd qd2) (Cons (Pair pi qd2)
+       Nil)))))))) )   (+ 1 p)
+                       (- p 1)
+                       (+ 1 q)
+                       (- q 1)
+                       (+ 2 p)
+                       (- p 2)
+                       (+ 2 q)
+                       (- q 2)
+       );
+
+sift c bd ms ls = ls ms (\sq sqs -> (onboard sq)
+                                    ( (pieceAt bd sq)
+                                       (sift c bd (Cons (Move sq Nothing Nothing) ms) sqs) (\p -> (sameColour (colourOf p) c)
+                                   (sift c bd ms sqs )
+                                   (sift c bd (Cons (Move sq (Just p) Nothing) ms) sqs)  )  )
+                                    (sift c bd ms sqs));
+                                    
+pawnmoves c ps bd = ps (\p q -> 
+                       (\fwd -> 
+                         (\on1 on2 -> 
+                           (\mov2 -> 
+                            (\movs dii did -> 
+                               (\caps -> append movs caps
+                                     ) (append (promoteCap c dii bd) (promoteCap c did bd))
+                                   ) ((no(pieceAt bd on1)) 
+                                      (append (promote c on1 Nothing) mov2)
+                                      (Nil))
+                                     (Pair ((+) p 1) ((+) q fwd) )
+                                     (Pair ((-) p 1) ((+) q fwd))
+                                       
+                                        ) ( (con (secondRank c q) (no (pieceAt bd on2))) (Cons (Move on2 Nothing Nothing) Nil) (Nil)  )
+                         
+                                      ) (Pair p ((+) q fwd)) 
+                                        (Pair p ((+) ((+) q fwd) fwd))
+                         
+                         ) (c (-1) 1) );                                   
+                                    
+promoteCap c sq bd = (\mcp ->
+                      mcp (Nil)
+                          (\p -> (sameColour (colourOf p) c)
+                            Nil
+                            (promote c sq mcp)
+                            ) ) (pieceAt bd sq);
+
+promote c sq mcp = (lastRank c (rank sq))
+                     (map (Move sq mcp)
+                       (Cons (Just (Pair c Queen))
+           (Cons (Just (Pair c Rook))
+           (Cons (Just (Pair c Bishop))
+           (Cons (Just (Pair c Knight)) Nil)))))
+                     (Cons (Move sq mcp Nothing) Nil );
+
+secondRank c r = ((== r 2) True False) ((== r 7) True False);
+
+lastRank c r = c ((== r 1) True False) ((== r 8) True False); 
+
+queenmoves c sq bd = append (bishopmoves c sq bd) (rookmoves c sq bd) ;
+
+kingincheck c bd =
+        any (kingInCheckFrom c bd) (forcesColoured (opponent c) bd) ;
+
+kingInCheckFrom c bd pss = pss (\f ps -> ps (\x y ->  
+                               (kingSquare c bd) (\xk yk ->
+                                  f (con ((leq) (abs ((-) x xk)) 1)((leq) (abs ((-) y yk)) 1))
+                                    (dis (kingInCheckFrom c bd (Pair Rook   (Pair x y)))) --queen 
+                                    (dis (con ((==) x xk)
+                       (emptyAtAll bd (filePath xk y yk)))
+                  (con ((==) y yk)
+                       (emptyAtAll bd (rankPath yk x xk))) ) --rook
+                           
+                                    (dis (con ((==) ((-) x y) ((-) xk yk))
+                       (emptyAtAll bd (diagPath minus ((-) xk yk) x xk)))
+                  (con ((==) ((+) x y) ((+) xk yk))
+                       (emptyAtAll bd (diagPath plus ((+) xk yk) x xk)))) --bishop
+                                   (dis (con ((==) (abs ((-) x xk)) 2) ((==) (abs ((-) y yk)) 1))
+                  (con ((==) (abs ((-) x xk)) 1) ((==) (abs ((-) y yk)) 2))) --knight
+                                   (con ((==) (abs ((-) x xk)) 1)
+                                    ((==) yk (onFor c y ))) --pawn
+    )));
+    
+    
+onFor c = c inc dec;    
+        
+filePath xk yFrom yTo ps = ps (\x y -> 
+                              (\ylo yhi -> con ((==) x xk) (con ((leq) ylo y) ((leq) y yhi)))
+                              ((+) (min yFrom yTo) 1)
+                              ((-) (max yFrom yTo) 1));    
+    
+    
+rankPath yk xFrom xTo ps = ps (\x y -> 
+                                (\xlo xhi ->  con ((==) y yk) (con ((leq) xlo x) ((leq) x xhi)))
+                                    ((+) (min xFrom xTo) 1 ) 
+                                    ((-) (max xFrom xTo) 1 ) 
+                                    );   
+    
+diagPath op d xFrom xTo ps = ps (\x y -> 
+                                (\xlo xhi -> con ((==) (op x y) d) (con ((leq) xlo x) ((leq) x xhi))   ) ((+) (min xFrom xTo) 1 ) 
+                                   ((-) (max xFrom xTo) 1)   
+                                );    
+
+
+solve bd c n = showResult (solution bd c ((-) ((+) n n) 1)) ;
+
+solution bd c n = (\mds -> foldr (solnOr c n) Nothing mds) (moveDetailsFor c bd);
+
+solnOr c n ps other = ps (\mif b -> 
+                          (replies b (opponent c) ((-) n 1))
+                          other
+                          (\rs -> (null rs)
+                                  ((kingincheck (opponent c) b)
+                                    (Just (Solution mif Nil))
+                                    (other) )
+                                  (Just (Solution mif rs))
+                                  ));
+                                  
+replies bd c n = (\mds -> (== 0 n) 
+                           ((null mds) (Just Nil) (Nothing))
+                           (foldr (solnAnd c n) (Just Nil) mds)
+                  ) (moveDetailsFor c bd);
+
+
+
+solnAnd c n ps rest = ps (\mif b -> 
+                         (solution b (opponent c) (- n 1))
+                            Nothing
+                            (\s -> rest Nothing
+                                        (\ms -> Just (Cons (Pair mif s) ms))));
+
+
+problem =
+    Pair
+    (Board
+      (Cons (Pair Knight (Pair 7 8))
+      (Cons (Pair Rook   (Pair 5 7))
+      (Cons (Pair King   (Pair 8 7))
+      (Cons (Pair Bishop (Pair 4 5))
+      (Cons (Pair Pawn   (Pair 8 4))
+      (Cons (Pair Pawn   (Pair 7 3))
+      (Cons (Pair Pawn   (Pair 5 2))
+      (Cons (Pair Pawn   (Pair 6 2))
+      (Cons (Pair Queen  (Pair 5 1))
+      Nil)))))))))
+      (Cons (Pair Knight (Pair 2 8))
+      (Cons (Pair Pawn   (Pair 7 7))
+      (Cons (Pair Pawn   (Pair 4 6))
+      (Cons (Pair Pawn   (Pair 3 5))
+      (Cons (Pair King   (Pair 6 5))
+      (Cons (Pair Pawn   (Pair 8 5))
+      (Cons (Pair Pawn   (Pair 4 4))
+      (Cons (Pair Pawn   (Pair 2 3))
+      (Cons (Pair Pawn   (Pair 5 3))
+      (Cons (Pair Pawn   (Pair 7 2))
+      (Cons (Pair Queen  (Pair 1 1))
+      (Cons (Pair Knight (Pair 2 1))
+      (Cons (Pair Bishop (Pair 8 1))
+      Nil)))))))))))))
+    )
+    (Pair White 3) ;
+
+
+showResult m = m 0 (\s -> size s);
+
+size ss = ss (\mif rs -> (+) 1 (sum (map size (snd (unzip rs))))) ;
+
+solveProblem pss = pss (\bd ps -> ps (\c n -> solve bd c n)) ;
+
+main = put (solveProblem problem) True; 
+
